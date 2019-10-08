@@ -1,0 +1,38 @@
+{
+  "name": "sleep-backend-api",
+  "version": "1.0.0",
+  "description": "backend for sleep tracker",
+  "main": "index.js",
+  "dependencies": {
+    "@types/express": "^4.17.1",
+    "@types/lodash": "^4.14.138",
+    "@types/luxon": "^1.15.2",
+    "@types/mongodb": "^3.3.2",
+    "@types/mongoose": "^5.5.17",
+    "@types/node": "12.7.2",
+    "express": "^4.17.1",
+    "lodash": "^4.17.15",
+    "luxon": "^1.17.2",
+    "mongodb": "^3.3.2",
+    "mongoose": "^5.7.1",
+    "typescript": "3.5.3"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.2.3",
+    "@types/mocha": "^5.2.7",
+    "@types/supertest": "^2.0.8",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.0",
+    "supertest": "^4.0.2",
+    "ts-mocha": "^6.0.0",
+    "ts-node": "^8.4.1",
+    "ts-node-dev": "^1.0.0-pre.43"
+  },
+  "scripts": {
+    "test2": "ts-mocha tests/*.test.ts -w",
+    "backend-dev": "ts-node-dev --respawn --transpileOnly src/server.ts",
+    "ts-repl": "ts-node -P package.json"
+  },
+  "author": "",
+  "license": "ISC"
+}
