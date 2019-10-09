@@ -29,7 +29,6 @@ const medsAndAlcoholSchema = new Schema<MedsType>(
 
 const nightSchema = new Schema<INightRecordJSDate>({
   edited: { type: Boolean, required: true },
-  // day: { type: String, required: true },
   dateAwake: { type: Date, required: true, unique: true },
   bedTime: { type: Date, required: false, },
   fellAsleepAt: { type: Date, required: false, },
@@ -56,12 +55,5 @@ const nightSchema = new Schema<INightRecordJSDate>({
     }
   }
 });
-
-// nightSchema.virtual('INightRecord').get(function () {
-//   // set the schema from
-// }).set(function (nr: INightRecord) {
-// });
-// nightSchema.statics.fromNightRecord = function(nr: INightRecord) {
-// }
 
 export default mongoose.model<NightDocument>('Night', nightSchema);

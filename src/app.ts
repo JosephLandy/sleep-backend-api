@@ -2,33 +2,34 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { IBaseNightRecord, DrugRecord, NightRecord } from '../shared/model';
 
-import { DateTime } from 'luxon';
+// import {parseISO, startOfWeek, endOfWeek, subHours} from 'date-fns';
+import * as dt from 'date-fns';
+
 const app = express();
 app.use(express.json());
-// app.use(express.urlencoded);
 
 import Night from './models/Night';
 
 export function deserializeForMongoSchema(start: IBaseNightRecord<string, string>) {
   let out: Partial<IBaseNightRecord<Date, string>> = {};
   out.edited = start.edited;
-  out.dateAwake = DateTime.fromISO(start.dateAwake).toJSDate();
+  out.dateAwake = dt.parseISO(start.dateAwake);
   if (start.bedTime)
-    out.bedTime = DateTime.fromISO(start.bedTime).toJSDate();
+    out.bedTime = dt.parseISO(start.bedTime);
   if (start.fellAsleepAt)
-    out.fellAsleepAt = DateTime.fromISO(start.fellAsleepAt).toJSDate();
+    out.fellAsleepAt = dt.parseISO(start.fellAsleepAt);
   out.interuptions = start.interuptions;
   if (start.wokeUp) {
-    out.wokeUp = DateTime.fromISO(start.wokeUp).toJSDate();
+    out.wokeUp = dt.parseISO(start.wokeUp);
   }
   if (start.gotUp) {
-    out.gotUp = DateTime.fromISO(start.gotUp).toJSDate();
+    out.gotUp = dt.parseISO(start.gotUp);
   }
   out.restedRating = start.restedRating;
   out.sleepQuality = start.sleepQuality;
   out.medsAndAlcohol = start.medsAndAlcohol.map(({ substance, time, quantity }) => {
     if (time) {
-      return { substance, time: DateTime.fromISO(time).toJSDate(), quantity };
+      return { substance, time: dt.parseISO(time), quantity };
     }
     return { substance, time: null, quantity };
   });
@@ -43,14 +44,14 @@ sends them to be graphed on the front end, with d3 or something.
 
 app.get('/api/analytics/:property', async (req, res) => {
   // query parameters will be in req.query. 
-  let start = DateTime.fromISO(req.query.start);
-  let end = DateTime.fromISO(req.query.end);
+  let start = dt.parseISO(req.query.start);
+  let end = dt.parseISO(req.query.end);
   console.log()
   try {
     let q = Night.find({
       dateAwake: {
-        $gte: start.toJSDate(),
-        $lt: end.toJSDate()
+        $gte: start,
+        $lt: end,
       },
       [req.params.property]: {
         $exists: true,
@@ -91,7 +92,7 @@ app.get('/api/night', async (req, res) => {
  * Get the night with dateAwake in ISO format as the url parameter. 
  */
 app.get('/api/nights/:dateAwake', async (req, res) => {
-  const date = DateTime.fromISO(req.params.dateAwake).toJSDate();
+  const date = dt.parseISO(req.params.dateAwake);
   try {
     const doc = await Night.findOne({ dateAwake: { $eq: date } }).lean();
     // console.log(doc);
@@ -152,12 +153,12 @@ app.get('/api/priorsubstances', (req, res) => {
 app.get('/api/weeks/:weekOf', async (req, res) => {
   // Basically here try and query a range of dates. 
   // Week can be any day in the week and it will find the start and end of the week. 
-  const dayInWeek = DateTime.fromISO(req.params.weekOf);
-  const queryStart = dayInWeek.startOf('week').minus({ hours: 8 });
-  const queryEnd = dayInWeek.endOf('week');
+  const dayInWeek = dt.parseISO(req.params.weekOf);
+  const queryStart = dt.subHours(dt.startOfWeek(dayInWeek), 8);
+  const queryEnd = dt.endOfWeek(dayInWeek);
   try {
     let nights = await Night.find(
-      { dateAwake: { $gt: queryStart.toJSDate(), $lt: queryEnd.toJSDate() } }).lean();
+      { dateAwake: { $gt: queryStart, $lt: queryEnd } }).lean();
     // const results = nights.map(nd => nd.toObject());
     if (nights.length > 0) {
       res.send(nights);
