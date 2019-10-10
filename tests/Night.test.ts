@@ -4,13 +4,13 @@ import 'mocha';
 import Night from '../src/models/Night';
 import mongoose from 'mongoose';
 import {completeNight} from '../shared/sampledata';
-import { INightRecordJSDate, convertToJSDate } from '../shared/model';
+import { INightRecord } from '../shared/model';
+// import { INightRecordJSDate, convertToJSDate } from '../shared/model';
 const dbName = 'sleepTestDB';
 const dburl = `mongodb://localhost:27017/${dbName}`;
 
-
-const nightJSDate = convertToJSDate(completeNight);
-const nightJSON = JSON.stringify(nightJSDate);
+// const nightJSDate = convertToJSDate(completeNight);
+const nightJSON = JSON.stringify(completeNight);
 
 
 
@@ -48,7 +48,7 @@ describe ('Night model', function () {
       expect(() => new Night(nightJSON)).to.throw();
     });
     it('should succeed for INightRecordDB', function() { // pass
-      expect(() => new Night(nightJSDate)).to.not.throw;
+      expect(() => new Night(completeNight)).to.not.throw;
     });
   });
   
@@ -67,16 +67,16 @@ describe ('Night model', function () {
     });
     
     it('should omit _id and __v from root', async function () {
-      const n = new Night(nightJSDate);
+      const n = new Night(completeNight);
       await n.save();
       let night = await Night.findOne({});
-      night = (night as mongoose.Document & INightRecordJSDate);
+      night = (night as mongoose.Document & INightRecord);
       expect(night.toObject()).not.to.have.property('_id');
       expect(night.toObject()).not.to.have.property('__v');
     });
     it('should omit _id and __v from subdocuments', async function () {
-      const n = new Night(nightJSDate);
-      let obj: INightRecordJSDate = n.toObject();
+      const n = new Night(completeNight);
+      let obj: INightRecord = n.toObject();
       expect(obj.interuptions[0]).not.to.have.property('_id');
       expect(obj.interuptions[0]).not.to.have.property('__v');
     });

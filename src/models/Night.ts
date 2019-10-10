@@ -1,14 +1,14 @@
 import mongoose, { Schema } from 'mongoose';
-import { INightRecordJSDate, IBaseNightRecord, DrugRecord, INightRecord, IntRecord } from '../../shared/model';
+import {IBaseNightRecord, DrugRecord, INightRecord, IntRecord } from '../../shared/model';
 
-export type NightDocument = INightRecordJSDate & mongoose.Document;
+export type NightDocument = INightRecord & mongoose.Document;
 
 // https://mongoosejs.com/docs/guide.html#_id lets me define child documents (like in medsAndAlcohol etc)
 // as not having an _id. 
 type IntType = { duration: string, notes: string }
 const interuptionsSchema = new Schema<IntRecord>(
 {
-    duration: String,
+    duration: Number,
     notes: String,
   },
   {
@@ -27,7 +27,7 @@ const medsAndAlcoholSchema = new Schema<MedsType>(
   }
 );
 
-const nightSchema = new Schema<INightRecordJSDate>({
+const nightSchema = new Schema<INightRecord>({
   edited: { type: Boolean, required: true },
   dateAwake: { type: Date, required: true, unique: true },
   bedTime: { type: Date, required: false, },
@@ -40,16 +40,17 @@ const nightSchema = new Schema<INightRecordJSDate>({
   medsAndAlcohol: [medsAndAlcoholSchema],
   notes: String,
 }, {
+  // minimize: false,
   toObject: {
     versionKey: false,
-    transform: (doc, ret: INightRecordJSDate & {_id: any}) => {
+    transform: (doc, ret: INightRecord & {_id: any}) => {
       delete ret._id;
       return ret;
     }
   },
   toJSON: {
     versionKey: false,
-    transform: (doc, ret: INightRecordJSDate & { _id: any}) => {
+    transform: (doc, ret: INightRecord & { _id: any}) => {
       delete ret._id;
       return ret;
     }

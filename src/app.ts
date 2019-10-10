@@ -10,32 +10,6 @@ app.use(express.json());
 
 import Night from './models/Night';
 
-export function deserializeForMongoSchema(start: IBaseNightRecord<string, string>) {
-  let out: Partial<IBaseNightRecord<Date, string>> = {};
-  out.edited = start.edited;
-  out.dateAwake = dt.parseISO(start.dateAwake);
-  if (start.bedTime)
-    out.bedTime = dt.parseISO(start.bedTime);
-  if (start.fellAsleepAt)
-    out.fellAsleepAt = dt.parseISO(start.fellAsleepAt);
-  out.interuptions = start.interuptions;
-  if (start.wokeUp) {
-    out.wokeUp = dt.parseISO(start.wokeUp);
-  }
-  if (start.gotUp) {
-    out.gotUp = dt.parseISO(start.gotUp);
-  }
-  out.restedRating = start.restedRating;
-  out.sleepQuality = start.sleepQuality;
-  out.medsAndAlcohol = start.medsAndAlcohol.map(({ substance, time, quantity }) => {
-    if (time) {
-      return { substance, time: dt.parseISO(time), quantity };
-    }
-    return { substance, time: null, quantity };
-  });
-  return (out as IBaseNightRecord<Date, string>);
-}
-
 /*
 I need to add an analytics route to the backend thing for the database that queries one or more 
 of the night object fields from the database (say, waking up time) for a range of dates and 
@@ -67,7 +41,6 @@ app.get('/api/analytics/:property', async (req, res) => {
     res.sendStatus(500);
   }
 })
-
 
 app.get('/api/night', async (req, res) => {
   let n;
@@ -116,7 +89,7 @@ app.get('/api/nights/:dateAwake', async (req, res) => {
 app.put('/api/nights', async (req, res) => {
 
   let nightrec = NightRecord.fromSerial(req.body).toDBFormat();
-  let mposted = new Night(nightrec);
+  // let mposted = new Night(nightrec);
   // I need also need to make sure there is only one document with dateAwake.
   // I can use findAndUpdate with upsert = true. 
   try {
@@ -129,14 +102,6 @@ app.put('/api/nights', async (req, res) => {
     console.log(`db error occured at PUT /api/night: ${e}`);
     res.sendStatus(500);
   }
-  // mposted.save((err, product) => {
-  //   if (err) {
-  //     console.log(err)
-  //     res.sendStatus(500);
-  //   } else {
-  //     res.sendStatus(202);
-  //   }
-  // });
 });
 
 app.get('/api/priorsubstances', (req, res) => {
@@ -149,10 +114,9 @@ app.get('/api/priorsubstances', (req, res) => {
   })
 });
 
-// I think this will work!
 app.get('/api/weeks/:weekOf', async (req, res) => {
-  // Basically here try and query a range of dates. 
-  // Week can be any day in the week and it will find the start and end of the week. 
+  // Basically here try and query a range of dates.
+  // Week can be any day in the week and it will find the start and end of the week.
   const dayInWeek = dt.parseISO(req.params.weekOf);
   const queryStart = dt.subHours(dt.startOfWeek(dayInWeek), 8);
   const queryEnd = dt.endOfWeek(dayInWeek);

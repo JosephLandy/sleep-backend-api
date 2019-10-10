@@ -7,20 +7,18 @@ import 'mocha';
 import app from '../src/app';
 
 import Night, {NightDocument} from '../src/models/Night';
-import {convertToJSDate, populateWeek, INightRecord, NightRecord} from '../shared/model'
+import {populateWeek, INightRecord, NightRecord} from '../shared/model'
 import { completeNight } from '../shared/sampledata';
 import { DateTime } from 'luxon';
+
+import {addHours, subHours, addDays, startOfWeek, isMonday, isTuesday, isWednesday, 
+  isThursday, isFriday, isSaturday, isSunday, format} from 'date-fns';
 
 const dbName = 'sleepTestDB';
 const dburl = `mongodb://localhost:27017/${dbName}`;
 
-/*
-Hi Ali, 
-I haven't talked to you in a while, but I graduated university a little while ago, 
-and I'm looking at finding work in Toronto. 
-*/
-
 describe('PUT  /api/nights', function () {
+
   beforeEach(function (done) {
     mongoose.connect(dburl, { useNewUrlParser: true })
       .then(() => {
@@ -42,54 +40,46 @@ describe('PUT  /api/nights', function () {
     })
   });
 
-
   it ('returns status 202 if valid night sent', async function () {
     const res = await request(app)
       .put('/api/nights')
-      // I think it converts to json automatically. This is just sending a string. 
-      // yeah, that was basically the problem I think. Weird. 
-      // .send(JSON.stringify(completeNight))
       .send(completeNight)
       .expect(200);
-    // expect(res.status).to.equal(200);
   })
 
   it ('adds night to database if not already there', async function  () {
-    const res = await request(app)
+    await request(app)
       .put('/api/nights')
       .send(completeNight)
       .expect(200);
+    let doc: NightDocument;
     try {
-      let doc: NightDocument = (await Night.findOne() as NightDocument); // find the one document.
-      expect(doc).not.to.be.null;
-      expect(doc.toObject()).to.eql(convertToJSDate(completeNight));
+      doc = (await Night.findOne() as NightDocument);
     } catch (e) {
       console.log(e);
       throw e;
     }
+    expect(doc.toObject()).to.eql(completeNight);
   });
 
   it ('replaces a document at the same date', async function () {
     let dt = DateTime.fromObject({year: 2005, month: 8, day: 22});
-    const initialNight = new NightRecord(dt);
-    const updated = completeNight;
+    const initialNight = new NightRecord(dt.toJSDate());
     let addedDoc: NightDocument;
     let addedID: number;
     let completeNight2 = NightRecord.fromNightRecord(completeNight);
-    completeNight2.dateAwake = dt;
+    completeNight2.dateAwake = dt.toJSDate();
     try {
       addedDoc = await new Night(initialNight.toDBFormat()).save();
-      expect(addedDoc).to.be.instanceOf(Night);
       addedID = addedDoc.id;
     } catch (e) {
       console.log(`test night failed to save to database: ${e}`);
       throw e;
     }
-    const res = await request(app)
+    await request(app)
       .put('/api/nights')
       .send(completeNight2)
       .expect(200);
-
     expect(await Night.countDocuments()).to.equal(1);
     let updatedDoc: NightDocument;
     try {
@@ -99,9 +89,7 @@ describe('PUT  /api/nights', function () {
     }
     expect(updatedDoc.dateAwake.getTime()).to.equal(addedDoc.dateAwake.getTime());
     expect(addedID).to.equal(updatedDoc.id);
-    // console.log(`preupdate ID ${addedID}`);
-    // console.log(`postupdate ID ${updatedDoc.id}`)
-    expect(updatedDoc.interuptions[0].duration).to.equal('PT3H');
+    expect(updatedDoc.interuptions[0].duration).to.equal(completeNight2.interuptions[0].duration);
 
   });
 
@@ -117,7 +105,7 @@ describe('GET /api/nights/:dateAwake', function () {
         await Night.remove({});
       })
       .then(async () => {
-        week = populateWeek(night);
+        week = populateWeek(night.toJSDate());
         nights = Object.entries(week.nights).map(val => {
           val[1].edited = true; 
           return val[1];
@@ -151,7 +139,7 @@ describe('GET /api/nights/:dateAwake', function () {
   });
 
   it ('sends night if night in DB', async function() {
-    let nightstr = nights[0].dateAwake.toISO();
+    let nightstr = nights[0].dateAwake.toISOString();
     const url = `/api/nights/${nightstr}`;
     let n: request.Response = await request(app)
       .get(url).expect('Content-Type', /json/).expect(200);
@@ -162,26 +150,28 @@ describe('GET /api/nights/:dateAwake', function () {
 })
 
 
-let nightInWeek = DateTime.fromObject({ year: 2002, month: 9, day: 3 });
-console.log(nightInWeek.weekdayLong);
-let start = nightInWeek.startOf('week'); // monday. 
-let mon = new NightRecord(start);
+// I should save this as a shared sample week.
+let nightInWeek = new Date(2002, 9, 3);
+let start = startOfWeek(nightInWeek);
+let sun = new NightRecord(start);
+sun.edited = true;
+sun.fellAsleepAt = subHours(sun.dateAwake, 2); // saturday night last week.
+let mon = new NightRecord(addDays(start, 1));
 mon.edited = true;
-mon.gotUp = mon.dateAwake.plus({hours: 8});
-let tues = new NightRecord(start.plus({ days: 1 }));
+mon.gotUp = addHours(mon.dateAwake, 8);
+let tues = new NightRecord(addDays(mon.dateAwake, 1));
 tues.edited = true;
 tues.sleepQuality = '5';
-let thurs = new NightRecord(tues.dateAwake.plus({ days: 2 }));
+let thurs = new NightRecord(addDays(tues.dateAwake, 2));
 thurs.edited = true;
-thurs.gotUp = thurs.dateAwake.plus({hours: 2});
-let sun = new NightRecord(thurs.dateAwake.plus({days: 3}));
-sun.edited = true;
-sun.fellAsleepAt = sun.dateAwake.minus({hours: 2}); // 10 pm saturday night. 
+thurs.gotUp = addHours(thurs.dateAwake, 2);
+let nextsunday = new NightRecord(addDays(sun.dateAwake, 7));
 let nights: NightRecord[] = [
-  mon,
   tues,
-  thurs,
+  mon,
+  nextsunday,
   sun,
+  thurs,
 ];
 
 describe('GET /api/weeks/:weekOf', () => {
@@ -207,24 +197,46 @@ describe('GET /api/weeks/:weekOf', () => {
     }
   });
 
-  it ('sends 404 if week not found in database', async function () {
-    const someNight = DateTime.fromObject({year: 2012, month: 8, day: 15});
-    const url = `/api/weeks/${someNight.toISO()}`;
-     await request(app).get(url).expect(404);
-  });
-
-  it ('sends partial week if not all days defined', async function () {
-    const url = `/api/weeks/${nightInWeek.toISO()}`;
-    let w = await request(app)
+  it ('sends json response', async function() {
+    const url = `/api/weeks/${nightInWeek.toISOString()}`;
+    await request(app)
       .get(url)
       .expect(200)
       .expect('Content-Type', /json/);
+  });
+
+  it ('sends 404 if week not found in database', async function () {
+    const someNight = DateTime.fromObject({year: 2012, month: 8, day: 15});
+    const url = `/api/weeks/${someNight.toISO()}`;
+    await request(app).get(url).expect(404);
+  });
+
+  // it ('dates of weekdays are as expected', async function () {
+  //   const url = `/api/weeks/${nightInWeek.toISOString()}`;
+  //   let w = await request(app)
+  //     .get(url)
+  //     .expect(200);
+  //   console.log('sunday is sunday? ', isSunday(sun.dateAwake));
+  //   w.body.forEach(n => {
+  //     console.log(format(NightRecord.fromSerial(n).dateAwake, 'EEEE'));
+  //   });
+
+  //   expect(isSunday(NightRecord.fromSerial(w.body[0]).dateAwake)).to.be.true;
+  // })
+
+  // ok, problem is that startOfWeek is defined differently for datefns vs luxon. 
+  // date-fns is probably better for north america (week starts on sunday. )
+  it ('sends partial week if not all days defined', async function () {
+    const url = `/api/weeks/${nightInWeek.toISOString()}`;
+    let w = await request(app)
+      .get(url)
+      .expect(200);
 
     expect(Array.isArray(w.body)).to.be.true;
     expect(w.body.length).to.equal(4);
-    expect(NightRecord.fromSerial(w.body[0])).to.eql(mon);
-    expect(NightRecord.fromSerial(w.body[1])).to.eql(tues);
-    expect(NightRecord.fromSerial(w.body[2])).to.eql(thurs);
-    expect(NightRecord.fromSerial(w.body[3])).to.eql(sun);
+    expect(NightRecord.fromSerial(w.body[0])).to.eql(sun);
+    expect(NightRecord.fromSerial(w.body[1])).to.eql(mon);
+    expect(NightRecord.fromSerial(w.body[2])).to.eql(tues);
+    expect(NightRecord.fromSerial(w.body[3])).to.eql(thurs);
   });
 });
