@@ -88,7 +88,7 @@ app.get('/api/nights/:dateAwake', async (req, res) => {
 // otherwise req is undefined.
 app.put('/api/nights', async (req, res) => {
 
-  let nightrec = NightRecord.fromSerial(req.body).toDBFormat();
+  let nightrec = NightRecord.fromSerial(req.body);
   // let mposted = new Night(nightrec);
   // I need also need to make sure there is only one document with dateAwake.
   // I can use findAndUpdate with upsert = true. 

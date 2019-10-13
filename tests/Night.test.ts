@@ -4,7 +4,7 @@ import 'mocha';
 import Night from '../src/models/Night';
 import mongoose from 'mongoose';
 import {completeNight} from '../shared/sampledata';
-import { INightRecord } from '../shared/model';
+import { INightRecord, NightRecord } from '../shared/model';
 // import { INightRecordJSDate, convertToJSDate } from '../shared/model';
 const dbName = 'sleepTestDB';
 const dburl = `mongodb://localhost:27017/${dbName}`;
@@ -44,13 +44,23 @@ describe ('Night model', function () {
       // using a completeNight converts to model absolutely fine. It's perfect.
       expect(() => new Night(completeNight)).to.not.throw();
     });
+
     it('should fail for JSON', function() { // pass
       expect(() => new Night(nightJSON)).to.throw();
     });
+
     it('should succeed for INightRecordDB', function() { // pass
       expect(() => new Night(completeNight)).to.not.throw;
     });
+
+    it ('should not fail for NightRecord class', function () {
+      const NRInstance = NightRecord.fromNightRecord(completeNight);
+      expect(() => new Night(NRInstance)).to.not.throw;
+
+    });
   });
+
+
   
   describe('#toObject', function () {
     before(function (done) {

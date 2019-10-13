@@ -70,7 +70,7 @@ describe('PUT  /api/nights', function () {
     let completeNight2 = NightRecord.fromNightRecord(completeNight);
     completeNight2.dateAwake = dt.toJSDate();
     try {
-      addedDoc = await new Night(initialNight.toDBFormat()).save();
+      addedDoc = await new Night(initialNight).save();
       addedID = addedDoc.id;
     } catch (e) {
       console.log(`test night failed to save to database: ${e}`);
