@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import {IBaseNightRecord, DrugRecord, INightRecord, IntRecord } from '../../shared/model';
+import {INightRecord, IntRecord } from '../../shared/model';
 
 export type NightDocument = INightRecord & mongoose.Document;
 
