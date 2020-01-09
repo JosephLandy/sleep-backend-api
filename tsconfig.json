@@ -17,10 +17,16 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    // "noEmit": true, for some inexplicable reason I had this set, preventing the build
     // "jsx": "react"
+    "outDir": "./build", // I think this is the correct format for 
+    "listEmittedFiles": true,
+    "listFiles": true
+    // "traceResolution": true,
+    // "sourceMap": true
   },
   "include": [
-    "src", "shared", "tests"
+    "./src/**/*", "./shared/**/*", "./tests/**/*"
+    // "./src/*", "./shared/*", "./tests/*"
   ]
 }

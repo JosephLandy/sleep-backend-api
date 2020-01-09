@@ -31,6 +31,7 @@
     "ts-node-dev": "^1.0.0-pre.43"
   },
   "scripts": {
+    "build": "tsc",
     "test2": "ts-mocha tests/*.test.ts -w",
     "backend-dev": "ts-node-dev --respawn --transpileOnly src/server.ts",
     "ts-repl": "ts-node -P package.json"

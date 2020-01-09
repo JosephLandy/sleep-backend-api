@@ -1,12 +1,17 @@
 import express from 'express';
 import mongoose from 'mongoose';
+
+import path from 'path';
+
 import { IBaseNightRecord, DrugRecord, NightRecord } from '../shared/model';
 
-// import {parseISO, startOfWeek, endOfWeek, subHours} from 'date-fns';
+import {parseISO, startOfWeek, endOfWeek, subHours, startOfDay} from 'date-fns';
 import * as dt from 'date-fns';
 
 const app = express();
 app.use(express.json());
+
+// app.use(express.static())
 
 import Night from './models/Night';
 
@@ -17,29 +22,37 @@ sends them to be graphed on the front end, with d3 or something.
 */
 
 app.get('/api/analytics/:property', async (req, res) => {
-  // query parameters will be in req.query. 
+  const today = startOfDay(new Date);
+  const tomorrow = dt.addDays(today, 1);
   let start = dt.parseISO(req.query.start);
+  console.log('start date ', start);
   let end = dt.parseISO(req.query.end);
-  console.log()
-  try {
-    let q = Night.find({
-      dateAwake: {
-        $gte: start,
-        $lt: end,
-      },
-      [req.params.property]: {
-        $exists: true,
-      }
-    }).select(`${req.params.property} dateAwake`).lean();
-    // let data = await Night.find({dateAwake: {$gte: start.toJSDate(), $lt: end.toJSDate()}})
-    let data = await q.exec();
-    console.log(data);
-    res.send(data);
+  console.log('end date ', end);
 
-  } catch (e) {
-    console.error(e);
-    res.sendStatus(500);
+  if (start >= tomorrow || end >= tomorrow || start >= end) {
+    res.status(400).send('invalid date range');
+  } else {
+    try {
+      let q = Night.find({
+        dateAwake: {
+          $gte: start,
+          $lt: end,
+        },
+        [req.params.property]: {
+          $exists: true,
+        }
+      }).select(`${req.params.property} dateAwake`).lean();
+      // let data = await Night.find({dateAwake: {$gte: start.toJSDate(), $lt: end.toJSDate()}})
+      let data = await q.exec();
+      console.log(data);
+      res.send(data);
+
+    } catch (e) {
+      console.error(e);
+      res.sendStatus(500);
+    }
   }
+  
 })
 
 app.get('/api/night', async (req, res) => {
