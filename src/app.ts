@@ -8,19 +8,28 @@ import { IBaseNightRecord, DrugRecord, NightRecord } from '../shared/model';
 import {parseISO, startOfWeek, endOfWeek, subHours, startOfDay} from 'date-fns';
 import * as dt from 'date-fns';
 
+import Night from "./models/Night";
+
 const app = express();
 app.use(express.json());
 
 // app.use(express.static())
+// app.use(express.static(path.join(__dirname, "sleep-frontend/build")));
+app.use(express.static('../sleep-frontend/build'));
 
-import Night from './models/Night';
+app.get('/', async (req, res) => {
+  console.log(__dirname);
+  // console.log(path.join(__dirname, "sleep-frontend/build/index.html"))
+  res.sendFile('../sleep-frontend/build/index.html');
+  // res.sendStatus(404);
+  // res.sendFile('sleep-frontend/build/');
+})
 
 /*
 I need to add an analytics route to the backend thing for the database that queries one or more 
 of the night object fields from the database (say, waking up time) for a range of dates and 
 sends them to be graphed on the front end, with d3 or something. 
 */
-
 app.get('/api/analytics/:property', async (req, res) => {
   const today = startOfDay(new Date);
   const tomorrow = dt.addDays(today, 1);
@@ -52,7 +61,6 @@ app.get('/api/analytics/:property', async (req, res) => {
       res.sendStatus(500);
     }
   }
-  
 })
 
 app.get('/api/night', async (req, res) => {
